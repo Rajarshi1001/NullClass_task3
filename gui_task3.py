@@ -21,17 +21,32 @@ headers = {
 
 ## loading the tokenizers
 
-model = load_model('english_to_french_lstm_model')
+model_hi = load_model('english_to_hindi_lstm_model')
+model_fr = load_model('english_to_french_lstm_model')
 
-#load Tokenizer
+#load Tokenizers
+
+with open('english_tokenizer_hindi.json') as f:
+    data = json.load(f)
+    english_tokenizer_hindi = tokenizer_from_json(data)
+
+with open('hindi_tokenizer.json') as f:
+    data = json.load(f)
+    hindi_tokenizer = tokenizer_from_json(data)
+    
 with open('english_tokenizer.json') as f:
     data = json.load(f)
     english_tokenizer = tokenizer_from_json(data)
-    
+
 with open('french_tokenizer.json') as f:
     data = json.load(f)
     french_tokenizer = tokenizer_from_json(data)
     
+    
+max_decoded_sentence_length = 20
+
+with open('sequence_length_hindi.json') as f:
+    max_length_hindi = json.load(f)
     
 with open('sequence_length.json') as f:
     max_length = json.load(f)
@@ -52,15 +67,38 @@ def translate_to_french(english_sentence):
     
     english_sentence = english_sentence.reshape((-1,max_length))
     
-    french_sentence = model.predict(english_sentence)[0]
+    french_sentence = model_fr.predict(english_sentence)[0]
     
     french_sentence = [np.argmax(word) for word in french_sentence]
 
     french_sentence = french_tokenizer.sequences_to_texts([french_sentence])[0]
     
-    print("French translation: ", french_sentence)
+    # print("French translation: ", french_sentence)
     
     return french_sentence
+
+def translate_to_hindi(english_sentence):
+    english_sentence = english_sentence.lower()
+    
+    english_sentence = english_sentence.replace(".", '')
+    english_sentence = english_sentence.replace("?", '')
+    english_sentence = english_sentence.replace("!", '')
+    english_sentence = english_sentence.replace(",", '')
+    
+    english_sentence = english_tokenizer.texts_to_sequences([english_sentence])
+    english_sentence = pad(english_sentence, max_length_hindi)
+    
+    english_sentence = english_sentence.reshape((-1,max_length_hindi))
+    
+    hindi_sentence = model_hi.predict(english_sentence)[0]
+    
+    hindi_sentence = [np.argmax(word) for word in hindi_sentence]
+
+    hindi_sentence = hindi_tokenizer.sequences_to_texts([hindi_sentence])[0]
+    
+    # print("hindi translation: ", hindi_sentence)
+    
+    return hindi_sentence
 
 def solve():
     input_text = input_entry.get()
